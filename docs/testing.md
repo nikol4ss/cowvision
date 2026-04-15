@@ -1,121 +1,94 @@
 # Guia de Testes
 
-Este projeto ainda nao possui suite automatica de testes, mas voce consegue validar tudo manualmente de forma segura.
+Este projeto possui dois niveis de validacao:
 
-## 1. Teste de sintaxe
+- testes automatizados para a logica central
+- testes manuais para validar banco, fluxo CLI e operacao sem hardware
 
-Verifica se os modulos Python compilam:
+## 1. Testes automatizados
 
-```bash
+Os testes unitarios ficam na pasta tests/ e cobrem:
+
+- calibracao
+- deteccao e medicao
+- servicos de monitoramento
+- saida principal da CLI
+
+Para rodar localmente, execute:
+python -m unittest discover -s tests -v
+
+## 2. Integracao continua
+
+O projeto tambem possui pipeline em .github/workflows/ci.yml.
+
+Essa CI executa:
+- instalacao do pacote em modo editavel
+- suite de testes unitarios
+
+Ela roda automaticamente em:
+- push para main
+- push para branches codex/**
+- pull_request
+
+## 3. Teste de sintaxe
+
+Verifica se os modulos Python compilam.
+Comando:
 python3 -m compileall src
-```
 
-## 2. Teste de instalacao
+## 4. Teste de instalacao
 
-Com ambiente virtual ativo:
-
-```bash
+Com ambiente virtual ativo, execute:
 pip install -e .
 cowvision --help
-```
 
-Se o comando mostrar a lista de subcomandos, a instalacao basica esta correta.
-
-## 3. Teste de banco
+## 5. Teste de banco
 
 Garanta que o PostgreSQL esta no ar e rode:
-
-```bash
 cowvision init-db
-```
 
-Depois verifique se as tabelas existem:
-
-```sql
+Depois verifique se as tabelas existem com o comando do psql:
 \dt
-```
 
 Voce deve ver:
-- `calibrations`
-- `measurements`
+- calibrations
+- measurements
 
-## 4. Teste sem hardware
+## 6. Teste sem hardware
 
-### Captura
-
-```bash
+Captura:
 cowvision capture-frame --backend mock
-```
 
-### Calibracao
+Calibracao:
+cowvision calibrate --image referencia.png --point-a 100,200 --point-b 500,200 --distance-m 2.0 --name teste-mock
 
-```bash
-cowvision calibrate \
-  --image referencia.png \
-  --point-a 100,200 \
-  --point-b 500,200 \
-  --distance-m 2.0 \
-  --name teste-mock
-```
-
-### Medicao unica
-
-```bash
+Medicao unica:
 cowvision measure-once --backend mock
-```
 
-### Monitoramento
-
-```bash
+Monitoramento:
 cowvision monitor --backend mock --frames 50 --interval 0.2
-```
 
-## 5. Teste com hardware real
-
-### Passo 1
+## 7. Teste com hardware real
 
 Instale o backend correto:
-- `freenect` para Kinect classico
-- `pykinect2` para Kinect v2
-
-### Passo 2
+- freenect para Kinect classico
+- pykinect2 para Kinect v2
 
 Teste captura:
-
-```bash
 cowvision capture-frame --backend freenect
-```
-
-Ou:
-
-```bash
+ou
 cowvision capture-frame --backend pykinect2
-```
-
-### Passo 3
 
 Faça calibracao com regua real:
-
-```bash
-cowvision calibrate \
-  --point-a 120,300 \
-  --point-b 620,300 \
-  --distance-m 2.0 \
-  --name baia-real
-```
-
-### Passo 4
+cowvision calibrate --point-a 120,300 --point-b 620,300 --distance-m 2.0 --name baia-real
 
 Execute medicao:
-
-```bash
 cowvision measure-once --backend freenect
-```
 
-## 6. Checklist de aceite
+## 8. Checklist de aceite
 
 O projeto pode ser considerado funcional quando:
-
+- testes unitarios passam
 - instala sem erro
 - cria banco sem erro
 - captura frame no modo mock
@@ -125,35 +98,28 @@ O projeto pode ser considerado funcional quando:
 - salva visualizacao de profundidade
 - grava medicao no banco
 
-## 7. Problemas comuns
+## 9. Problemas comuns
 
-### Erro de conexao com banco
-
-Verifique:
+Erro de conexao com banco:
 - usuario
 - senha
 - host
 - porta
 - nome do banco
 
-### `measure-once` retorna `no-object-detected`
-
-Verifique:
+measure-once retorna no-object-detected:
 - se existe calibracao salva
-- se `PIXELS_PER_METER` esta configurado
+- se PIXELS_PER_METER esta configurado
 - se o objeto tem area suficiente
 
-### Sem profundidade
-
-Pode acontecer quando:
+Sem profundidade:
 - backend nao entregou frame de profundidade
 - hardware nao esta pronto
 - biblioteca nao esta instalada corretamente
 
-## 8. Sugestao de proximo passo
+## 10. Sugestao de proximo passo
 
 Quando quiser, eu posso montar tambem:
-- testes automatizados com `pytest`
 - dados de exemplo
 - script SQL para criar banco e usuario
 - script shell para subir o ambiente mais rapido
