@@ -8,7 +8,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from pigvision.config import settings
+from cowvision.config import settings
 
 
 class FileStorage:

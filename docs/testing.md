@@ -16,7 +16,7 @@ Com ambiente virtual ativo:
 
 ```bash
 pip install -e .
-pigvision --help
+cowvision --help
 ```
 
 Se o comando mostrar a lista de subcomandos, a instalacao basica esta correta.
@@ -26,7 +26,7 @@ Se o comando mostrar a lista de subcomandos, a instalacao basica esta correta.
 Garanta que o PostgreSQL esta no ar e rode:
 
 ```bash
-pigvision init-db
+cowvision init-db
 ```
 
 Depois verifique se as tabelas existem:
@@ -44,13 +44,13 @@ Voce deve ver:
 ### Captura
 
 ```bash
-pigvision capture-frame --backend mock
+cowvision capture-frame --backend mock
 ```
 
 ### Calibracao
 
 ```bash
-pigvision calibrate \
+cowvision calibrate \
   --image referencia.png \
   --point-a 100,200 \
   --point-b 500,200 \
@@ -61,13 +61,13 @@ pigvision calibrate \
 ### Medicao unica
 
 ```bash
-pigvision measure-once --backend mock
+cowvision measure-once --backend mock
 ```
 
 ### Monitoramento
 
 ```bash
-pigvision monitor --backend mock --frames 50 --interval 0.2
+cowvision monitor --backend mock --frames 50 --interval 0.2
 ```
 
 ## 5. Teste com hardware real
@@ -83,13 +83,13 @@ Instale o backend correto:
 Teste captura:
 
 ```bash
-pigvision capture-frame --backend freenect
+cowvision capture-frame --backend freenect
 ```
 
 Ou:
 
 ```bash
-pigvision capture-frame --backend pykinect2
+cowvision capture-frame --backend pykinect2
 ```
 
 ### Passo 3
@@ -97,7 +97,7 @@ pigvision capture-frame --backend pykinect2
 Faça calibracao com regua real:
 
 ```bash
-pigvision calibrate \
+cowvision calibrate \
   --point-a 120,300 \
   --point-b 620,300 \
   --distance-m 2.0 \
@@ -109,7 +109,7 @@ pigvision calibrate \
 Execute medicao:
 
 ```bash
-pigvision measure-once --backend freenect
+cowvision measure-once --backend freenect
 ```
 
 ## 6. Checklist de aceite

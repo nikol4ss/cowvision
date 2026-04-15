@@ -12,14 +12,14 @@ Aqui ficam os fluxos completos que combinam:
 import time
 from pathlib import Path
 
-from pigvision.calibration import Calibrator
-from pigvision.config import settings
-from pigvision.database import session_scope
-from pigvision.kinect import BaseKinectCamera, build_camera
-from pigvision.measurement import MeasurementEngine
-from pigvision.repositories import CalibrationRepository, MeasurementRepository
-from pigvision.schemas import CalibrationResult, FrameBundle, MeasurementResult
-from pigvision.storage import FileStorage
+from cowvision.calibration import Calibrator
+from cowvision.config import settings
+from cowvision.database import session_scope
+from cowvision.kinect import BaseKinectCamera, build_camera
+from cowvision.measurement import MeasurementEngine
+from cowvision.repositories import CalibrationRepository, MeasurementRepository
+from cowvision.schemas import CalibrationResult, FrameBundle, MeasurementResult
+from cowvision.storage import FileStorage
 
 
 class CalibrationService:

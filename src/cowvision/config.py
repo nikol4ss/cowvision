@@ -28,7 +28,7 @@ class Settings:
 
     database_url: str = os.getenv(
         "DATABASE_URL",
-        "postgresql+psycopg2://postgres:postgres@localhost:5432/pigvision",
+        "postgresql+psycopg2://postgres:postgres@localhost:5432/cowvision",
     )
     storage_dir: Path = Path(os.getenv("STORAGE_DIR", "data"))
     kinect_backend: str = os.getenv("KINECT_BACKEND", "auto")

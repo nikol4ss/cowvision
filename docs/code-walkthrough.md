@@ -2,7 +2,7 @@
 
 Este documento explica cada parte importante do projeto em linguagem direta.
 
-## `src/pigvision/cli.py`
+## `src/cowvision/cli.py`
 
 Papel:
 - receber comandos do terminal
@@ -28,7 +28,7 @@ O CLI manda isso para `CalibrationService`, que:
 - salva a imagem anotada
 - grava no banco
 
-## `src/pigvision/kinect.py`
+## `src/cowvision/kinect.py`
 
 Esse arquivo serve para padronizar a captura.
 
@@ -47,7 +47,7 @@ Foi criado para voce poder testar:
 
 Sem depender de Kinect fisico.
 
-## `src/pigvision/measurement.py`
+## `src/cowvision/measurement.py`
 
 Este e o coracao da medicao.
 
@@ -77,7 +77,7 @@ Executa a segmentacao do objeto:
 ### Por que usar `minAreaRect`
 
 Porque ele mede uma caixa rotacionada, nao apenas horizontal.
-Isso ajuda quando o animal nao esta perfeitamente alinhado com a imagem.
+Isso ajuda quando a vaca nao esta perfeitamente alinhada com a imagem.
 
 ### Como a medida em metros e obtida
 
@@ -94,7 +94,7 @@ largura_m = largura_px / pixels_per_meter
 altura_m = altura_px / pixels_per_meter
 ```
 
-## `src/pigvision/services.py`
+## `src/cowvision/services.py`
 
 Esse arquivo amarra o fluxo completo.
 
@@ -115,7 +115,7 @@ Responsavel por:
 - salvar profundidade
 - inserir no banco
 
-## `src/pigvision/models.py`
+## `src/cowvision/models.py`
 
 Existem duas tabelas:
 
@@ -138,7 +138,7 @@ Guarda:
 - caminhos das imagens
 - metadados em JSON
 
-## `src/pigvision/storage.py`
+## `src/cowvision/storage.py`
 
 Tem apenas uma responsabilidade:
 - salvar arquivos em disco com nome unico
@@ -148,7 +148,7 @@ Pastas geradas:
 - `data/depth`
 - `data/calibration`
 
-## `src/pigvision/database.py`
+## `src/cowvision/database.py`
 
 Centraliza:
 - engine do SQLAlchemy
@@ -161,9 +161,9 @@ O `session_scope()` existe para evitar repeticao e deixar o codigo mais seguro.
 
 Uma boa ordem para leitura e:
 
-1. [src/pigvision/cli.py](/Users/user/Workspaces/projects/pigvision/src/pigvision/cli.py)
-2. [src/pigvision/services.py](/Users/user/Workspaces/projects/pigvision/src/pigvision/services.py)
-3. [src/pigvision/measurement.py](/Users/user/Workspaces/projects/pigvision/src/pigvision/measurement.py)
-4. [src/pigvision/kinect.py](/Users/user/Workspaces/projects/pigvision/src/pigvision/kinect.py)
-5. [src/pigvision/models.py](/Users/user/Workspaces/projects/pigvision/src/pigvision/models.py)
-6. [src/pigvision/storage.py](/Users/user/Workspaces/projects/pigvision/src/pigvision/storage.py)
+1. [src/cowvision/cli.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/cli.py)
+2. [src/cowvision/services.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/services.py)
+3. [src/cowvision/measurement.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/measurement.py)
+4. [src/cowvision/kinect.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/kinect.py)
+5. [src/cowvision/models.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/models.py)
+6. [src/cowvision/storage.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/storage.py)

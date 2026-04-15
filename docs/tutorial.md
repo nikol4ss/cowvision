@@ -57,7 +57,7 @@ cp .env.example .env
 Exemplo de configuracao:
 
 ```env
-DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/pigvision
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/cowvision
 STORAGE_DIR=data
 KINECT_BACKEND=mock
 PIXELS_PER_METER=0
@@ -93,20 +93,20 @@ AUTO_START=false
 Exemplo de criacao do banco:
 
 ```sql
-CREATE DATABASE pigvision;
+CREATE DATABASE cowvision;
 ```
 
 Exemplo de usuario, se precisar:
 
 ```sql
-CREATE USER pigvision_user WITH PASSWORD 'pigvision_pass';
-GRANT ALL PRIVILEGES ON DATABASE pigvision TO pigvision_user;
+CREATE USER cowvision_user WITH PASSWORD 'cowvision_pass';
+GRANT ALL PRIVILEGES ON DATABASE cowvision TO cowvision_user;
 ```
 
 Se usar esse usuario, ajuste o `.env`:
 
 ```env
-DATABASE_URL=postgresql+psycopg2://pigvision_user:pigvision_pass@localhost:5432/pigvision
+DATABASE_URL=postgresql+psycopg2://cowvision_user:cowvision_pass@localhost:5432/cowvision
 ```
 
 ## 6. Criar tabelas
@@ -114,7 +114,7 @@ DATABASE_URL=postgresql+psycopg2://pigvision_user:pigvision_pass@localhost:5432/
 Com ambiente ativo:
 
 ```bash
-pigvision init-db
+cowvision init-db
 ```
 
 Saida esperada:
@@ -130,7 +130,7 @@ Esse e o melhor caminho para validar que tudo esta instalado.
 ### Testar captura
 
 ```bash
-pigvision capture-frame --backend mock
+cowvision capture-frame --backend mock
 ```
 
 Saida esperada parecida com:
@@ -146,7 +146,7 @@ Como o modo `mock` gera um objeto artificial, voce pode calibrar com uma imagem 
 Se tiver uma imagem de referencia, use:
 
 ```bash
-pigvision calibrate \
+cowvision calibrate \
   --image referencia.png \
   --point-a 100,200 \
   --point-b 500,200 \
@@ -167,7 +167,7 @@ Isso significa:
 ### Executar uma medicao unica
 
 ```bash
-pigvision measure-once --backend mock
+cowvision measure-once --backend mock
 ```
 
 Se o objeto for detectado, a saida sera parecida com:
@@ -186,7 +186,7 @@ Se o objeto for detectado, a saida sera parecida com:
 ### Testar monitoramento
 
 ```bash
-pigvision monitor --backend mock --frames 50 --interval 0.2
+cowvision monitor --backend mock --frames 50 --interval 0.2
 ```
 
 Saida esperada:
@@ -251,13 +251,13 @@ KINECT_BACKEND=pykinect2
 Depois:
 
 ```bash
-pigvision capture-frame --backend freenect
+cowvision capture-frame --backend freenect
 ```
 
 Se tudo estiver certo, refaça a calibracao real:
 
 ```bash
-pigvision calibrate \
+cowvision calibrate \
   --point-a 120,300 \
   --point-b 620,300 \
   --distance-m 2.0 \
@@ -267,7 +267,7 @@ pigvision calibrate \
 ## 11. Fluxo operacional recomendado em campo
 
 1. Fixe o Kinect sempre na mesma altura e angulo.
-2. Delimite a area por onde o suino deve passar.
+2. Delimite a area por onde a vaca deve passar.
 3. Coloque uma regua ou referencia conhecida na cena.
 4. Execute a calibracao.
 5. Confira a imagem gerada.
@@ -299,7 +299,7 @@ Nao e uma probabilidade estatistica rigorosa.
 
 ## 13. Ajustes finos mais comuns
 
-Se o sistema nao detectar o animal:
+Se o sistema nao detectar a vaca:
 - reduza `MIN_CONTOUR_AREA`
 - reduza `MOTION_THRESHOLD`
 
@@ -310,7 +310,7 @@ Se estiver detectando ruido:
 
 Se a medida em metros estiver errada:
 - refaça a calibracao
-- garanta que a referencia esta no mesmo plano do animal
+- garanta que a referencia esta no mesmo plano da vaca
 - mantenha o Kinect fixo
 
 ## 14. Ordem recomendada de validacao

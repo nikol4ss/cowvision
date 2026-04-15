@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 import cv2
 import numpy as np
 
-from pigvision.schemas import FrameBundle
+from cowvision.schemas import FrameBundle
 
 
 class BaseKinectCamera(ABC):

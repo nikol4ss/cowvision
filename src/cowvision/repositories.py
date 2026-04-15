@@ -5,8 +5,8 @@ import json
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
-from pigvision.models import CalibrationRecord, MeasurementRecord
-from pigvision.schemas import CalibrationResult, MeasurementResult
+from cowvision.models import CalibrationRecord, MeasurementRecord
+from cowvision.schemas import CalibrationResult, MeasurementResult
 
 
 class CalibrationRepository:

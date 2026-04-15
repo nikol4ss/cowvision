@@ -1,6 +1,6 @@
-# PigVision
+# CowVision
 
-Estrutura simples e funcional para medir suinos com Kinect, calibrar relacao pixel x distancia real e registrar imagens e dados no PostgreSQL.
+Estrutura simples e funcional para medir vacas com Kinect, calibrar relacao pixel x distancia real e registrar imagens e dados no PostgreSQL.
 
 Se voce quer um guia completo de estudo e operacao, leia tambem:
 
@@ -19,7 +19,7 @@ Se voce quer um guia completo de estudo e operacao, leia tambem:
 ## Estrutura
 
 ```text
-src/pigvision/
+src/cowvision/
   cli.py            # Comandos principais
   config.py         # Variaveis de ambiente
   database.py       # SQLAlchemy e sessao
@@ -61,7 +61,7 @@ pip install -e ".[kinect]"
 Ajuste o arquivo `.env`:
 
 ```env
-DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/pigvision
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/cowvision
 STORAGE_DIR=data
 KINECT_BACKEND=auto
 PIXELS_PER_METER=0
@@ -76,19 +76,19 @@ MOTION_THRESHOLD=25
 Inicializar tabelas:
 
 ```bash
-pigvision init-db
+cowvision init-db
 ```
 
 Capturar um frame para testar a camera:
 
 ```bash
-pigvision capture-frame --backend mock
+cowvision capture-frame --backend mock
 ```
 
 Calibrar usando uma imagem existente:
 
 ```bash
-pigvision calibrate \
+cowvision calibrate \
   --image referencia.png \
   --point-a 120,300 \
   --point-b 620,300 \
@@ -99,13 +99,13 @@ pigvision calibrate \
 Medir uma unica passagem:
 
 ```bash
-pigvision measure-once --backend mock
+cowvision measure-once --backend mock
 ```
 
 Monitorar continuamente:
 
 ```bash
-pigvision monitor --backend mock --frames 200 --interval 0.3
+cowvision monitor --backend mock --frames 200 --interval 0.3
 ```
 
 ## Documentacao recomendada
@@ -119,7 +119,7 @@ pigvision monitor --backend mock --frames 200 --interval 0.3
 1. Fixar o Kinect na mesma posicao de trabalho.
 2. Posicionar uma regua ou referencia conhecida no campo de visao.
 3. Executar a calibracao e validar a imagem gerada em `data/calibration/`.
-4. Rodar `pigvision monitor`.
+4. Rodar `cowvision monitor`.
 5. Conferir as imagens anotadas em `data/images/` e os registros no PostgreSQL.
 
 ## Observacoes praticas

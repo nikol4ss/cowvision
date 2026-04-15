@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pigvision"
+name = "cowvision"
 version = "0.1.0"
-description = "Sistema simples para captura, calibracao e medicao automatica de suinos com Kinect."
+description = "Sistema simples para captura, calibracao e medicao automatica de vacas com Kinect."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -23,7 +23,7 @@ kinect = [
 ]
 
 [project.scripts]
-pigvision = "pigvision.cli:main"
+cowvision = "cowvision.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

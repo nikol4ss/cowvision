@@ -12,11 +12,11 @@ Este modulo concentra a parte de visao computacional:
 import cv2
 import numpy as np
 
-from pigvision.schemas import FrameBundle, MeasurementResult
+from cowvision.schemas import FrameBundle, MeasurementResult
 
 
 class MeasurementEngine:
-    """Executa o pipeline de medicao de um frame.
+    """Executa o pipeline de medicao de um frame de vaca.
 
     A abordagem foi mantida simples de proposito:
     - aplica blur e threshold
@@ -73,7 +73,7 @@ class MeasurementEngine:
         (center_x, center_y), (width_px, height_px), angle = rect
         box = cv2.boxPoints(rect).astype(int)
         # `minAreaRect` retorna a menor caixa rotacionada que contem o contorno.
-        # O maior lado representa a extensao principal do animal no frame.
+        # O maior lado representa a extensao principal da vaca no frame.
         major_px = max(width_px, height_px)
         minor_px = min(width_px, height_px)
         width_m = major_px / self.pixels_per_meter

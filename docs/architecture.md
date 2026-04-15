@@ -1,4 +1,4 @@
-# Arquitetura do PigVision
+# Arquitetura do CowVision
 
 ## Objetivo
 
@@ -26,7 +26,7 @@ Kinect / Mock
 
 ### 1. Configuracao
 
-Arquivo: [src/pigvision/config.py](/Users/user/Workspaces/projects/pigvision/src/pigvision/config.py)
+Arquivo: [src/cowvision/config.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/config.py)
 
 Responsabilidade:
 - ler `.env`
@@ -40,7 +40,7 @@ Exemplos de configuracao:
 
 ### 2. Captura
 
-Arquivo: [src/pigvision/kinect.py](/Users/user/Workspaces/projects/pigvision/src/pigvision/kinect.py)
+Arquivo: [src/cowvision/kinect.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/kinect.py)
 
 Responsabilidade:
 - encapsular a origem dos frames
@@ -54,7 +54,7 @@ Classes:
 
 ### 3. Calibracao
 
-Arquivo: [src/pigvision/calibration.py](/Users/user/Workspaces/projects/pigvision/src/pigvision/calibration.py)
+Arquivo: [src/cowvision/calibration.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/calibration.py)
 
 Responsabilidade:
 - calcular `pixels_per_meter`
@@ -74,7 +74,7 @@ pixels_per_meter = 500 / 2.0 = 250 px/m
 
 ### 4. Medicao
 
-Arquivo: [src/pigvision/measurement.py](/Users/user/Workspaces/projects/pigvision/src/pigvision/measurement.py)
+Arquivo: [src/cowvision/measurement.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/measurement.py)
 
 Responsabilidade:
 - detectar movimento
@@ -93,7 +93,7 @@ Pipeline atual:
 
 ### 5. Orquestracao
 
-Arquivo: [src/pigvision/services.py](/Users/user/Workspaces/projects/pigvision/src/pigvision/services.py)
+Arquivo: [src/cowvision/services.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/services.py)
 
 Responsabilidade:
 - combinar os modulos tecnicos em fluxos completos de negocio
@@ -105,10 +105,10 @@ Servicos:
 ### 6. Persistencia
 
 Arquivos:
-- [src/pigvision/database.py](/Users/user/Workspaces/projects/pigvision/src/pigvision/database.py)
-- [src/pigvision/models.py](/Users/user/Workspaces/projects/pigvision/src/pigvision/models.py)
-- [src/pigvision/repositories.py](/Users/user/Workspaces/projects/pigvision/src/pigvision/repositories.py)
-- [src/pigvision/storage.py](/Users/user/Workspaces/projects/pigvision/src/pigvision/storage.py)
+- [src/cowvision/database.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/database.py)
+- [src/cowvision/models.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/models.py)
+- [src/cowvision/repositories.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/repositories.py)
+- [src/cowvision/storage.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/storage.py)
 
 Responsabilidade:
 - criar tabelas

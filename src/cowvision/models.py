@@ -7,7 +7,7 @@ from datetime import datetime
 from sqlalchemy import DateTime, Float, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from pigvision.database import Base
+from cowvision.database import Base
 
 
 class CalibrationRecord(Base):

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pigvision.database import Base, engine
+from cowvision.database import Base, engine
 
 
 def init_db() -> None:

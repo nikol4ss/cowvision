@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Interface de linha de comando do PigVision.
+"""Interface de linha de comando do CowVision.
 
 Comandos principais:
 - `init-db`: cria as tabelas
@@ -16,16 +16,16 @@ from pathlib import Path
 
 import cv2
 
-from pigvision.config import settings
-from pigvision.database import Base, engine
-from pigvision.kinect import build_camera
-from pigvision.services import CalibrationService, MonitoringService
+from cowvision.config import settings
+from cowvision.database import Base, engine
+from cowvision.kinect import build_camera
+from cowvision.services import CalibrationService, MonitoringService
 
 
 def build_parser() -> argparse.ArgumentParser:
     """Constroi o parser principal e seus subcomandos."""
 
-    parser = argparse.ArgumentParser(description="PigVision: medicao de suinos com Kinect")
+    parser = argparse.ArgumentParser(description="CowVision: medicao de vacas com Kinect")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     subparsers.add_parser("init-db", help="Cria as tabelas no PostgreSQL")
@@ -144,7 +144,7 @@ def command_monitor(backend: str, frames: int, interval: float) -> None:
 
 
 def main() -> None:
-    """Ponto de entrada do executavel `pigvision`."""
+    """Ponto de entrada do executavel `cowvision`."""
 
     parser = build_parser()
     args = parser.parse_args()
