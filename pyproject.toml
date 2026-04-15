@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pigvision"
+version = "0.1.0"
+description = "Sistema simples para captura, calibracao e medicao automatica de suinos com Kinect."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.26",
+  "opencv-python>=4.9",
+  "psycopg2-binary>=2.9",
+  "SQLAlchemy>=2.0",
+  "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+kinect = [
+  "freenect>=1.0.0; platform_system != 'Windows'",
+  "pykinect2; platform_system == 'Windows'",
+]
+
+[project.scripts]
+pigvision = "pigvision.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
