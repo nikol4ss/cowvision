@@ -2,7 +2,7 @@ from __future__ import annotations
 
 """Utilitarios para persistencia de imagens em disco."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import cv2
@@ -31,7 +31,7 @@ class FileStorage:
     def _timestamped_path(self, directory: Path, prefix: str, suffix: str = ".png") -> Path:
         """Gera um nome de arquivo unico baseado no horario atual."""
 
-        stamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S_%f")
+        stamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S_%f")
         return directory / f"{prefix}_{stamp}{suffix}"
 
     def save_image(self, image: np.ndarray, prefix: str = "measurement") -> Path:
