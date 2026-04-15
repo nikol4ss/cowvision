@@ -1,56 +1,63 @@
 # CowVision
 
-Estrutura simples e funcional para medir vacas com Kinect, calibrar relacao pixel x distancia real e registrar imagens e dados no PostgreSQL.
+CowVision e uma base em Python para captacao, calibracao e medicao automatica de vacas usando Kinect. O projeto transforma informacoes de imagem e profundidade em medidas reais, registra as evidencias visuais da medicao e persiste os dados em PostgreSQL.
 
-Se voce quer um guia completo de estudo e operacao, leia tambem:
+## Visao geral
 
-- [Visao Geral da Arquitetura](/Users/user/Workspaces/projects/pigvision/docs/architecture.md)
-- [Tutorial Completo de Instalacao e Uso](/Users/user/Workspaces/projects/pigvision/docs/tutorial.md)
-- [Guia de Testes](/Users/user/Workspaces/projects/pigvision/docs/testing.md)
+O sistema foi desenhado para um fluxo simples e objetivo:
 
-## O que o projeto faz
+- capturar imagem colorida e profundidade com Kinect
+- calibrar a relacao entre pixel e distancia real
+- detectar automaticamente a passagem de um objeto pela cena
+- medir dimensoes principais da vaca no frame
+- salvar imagens anotadas, visualizacao de profundidade e registros no banco
 
-- Captura imagem colorida e profundidade com Kinect usando `freenect` ou `pykinect2`
-- Permite calibracao com uma regua ou referencia conhecida
-- Detecta passagem de objeto com comparacao entre frames
-- Mede largura e diametro em pixels e metros
-- Salva imagem anotada, mapa de profundidade e dados no PostgreSQL
+A implementacao prioriza simplicidade operacional. Por isso, o projeto ja inclui um backend `mock`, que permite desenvolver, testar e validar o fluxo sem Kinect fisico.
 
-## Estrutura
+## Principais capacidades
+
+- suporte a `freenect` e `pykinect2`
+- backend `mock` para desenvolvimento sem hardware
+- calibracao baseada em referencia conhecida
+- deteccao simples de movimento entre frames
+- medicao em pixels e metros
+- persistencia de calibracoes e medicoes em PostgreSQL
+- salvamento de imagens anotadas e mapas de profundidade
+- CLI para operacao, testes e diagnostico
+- testes unitarios e CI com GitHub Actions
+
+## Estrutura do projeto
 
 ```text
 src/cowvision/
-  cli.py            # Comandos principais
-  config.py         # Variaveis de ambiente
-  database.py       # SQLAlchemy e sessao
-  models.py         # Tabelas de calibracao e medicao
-  kinect.py         # Integracao Kinect e modo mock
-  calibration.py    # Relacao pixel x metro
-  measurement.py    # Deteccao e medicao
-  services.py       # Fluxos de calibracao e monitoramento
-  storage.py        # Salvamento de imagens
+  cli.py            Interface de linha de comando
+  config.py         Configuracoes do projeto via .env
+  database.py       Engine, sessao e transacao do SQLAlchemy
+  models.py         Modelos ORM de calibracao e medicao
+  kinect.py         Integracao com Kinect e backend mock
+  calibration.py    Calculo da relacao pixel x metro
+  measurement.py    Deteccao e medicao do objeto no frame
+  services.py       Orquestracao dos fluxos principais
+  storage.py        Persistencia de imagens em disco
 ```
-
-Documentacao detalhada arquivo por arquivo:
-
-- [Codigo Explicado](/Users/user/Workspaces/projects/pigvision/docs/code-walkthrough.md)
 
 ## Requisitos
 
-- Python 3.10+
+- Python 3.10 ou superior
 - PostgreSQL
-- Kinect compativel com `freenect` ou `pykinect2`
+- opcionalmente, Kinect compativel com `freenect` ou `pykinect2`
 
-## Instalacao
+## Instalacao rapida
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
+python -m pip install --upgrade pip
 pip install -e .
 cp .env.example .env
 ```
 
-Se for usar Kinect no Linux:
+Para instalar suporte adicional ao Kinect:
 
 ```bash
 pip install -e ".[kinect]"
@@ -58,34 +65,42 @@ pip install -e ".[kinect]"
 
 ## Configuracao
 
-Ajuste o arquivo `.env`:
+Exemplo de `.env`:
 
 ```env
 DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/cowvision
 STORAGE_DIR=data
-KINECT_BACKEND=auto
+KINECT_BACKEND=mock
 PIXELS_PER_METER=0
+DEPTH_SCALE_METER=0.001
 MIN_CONTOUR_AREA=8000
 MOTION_THRESHOLD=25
+AUTO_START=false
 ```
 
-`PIXELS_PER_METER` pode ficar `0` quando voce quiser usar a ultima calibracao salva no banco.
+Valores mais importantes:
 
-## Uso
+- `DATABASE_URL`: string de conexao com o PostgreSQL
+- `KINECT_BACKEND`: `mock`, `auto`, `freenect` ou `pykinect2`
+- `PIXELS_PER_METER`: se maior que zero, usa valor fixo; se zero, usa a ultima calibracao salva
+- `MIN_CONTOUR_AREA`: area minima para considerar um objeto valido
+- `MOTION_THRESHOLD`: sensibilidade da deteccao de movimento
 
-Inicializar tabelas:
+## Uso basico
+
+Inicializar o banco:
 
 ```bash
 cowvision init-db
 ```
 
-Capturar um frame para testar a camera:
+Testar captura sem hardware:
 
 ```bash
 cowvision capture-frame --backend mock
 ```
 
-Calibrar usando uma imagem existente:
+Calibrar usando uma imagem:
 
 ```bash
 cowvision calibrate \
@@ -93,10 +108,10 @@ cowvision calibrate \
   --point-a 120,300 \
   --point-b 620,300 \
   --distance-m 2.0 \
-  --name regua-baia-01
+  --name baia-01
 ```
 
-Medir uma unica passagem:
+Executar uma medicao unica:
 
 ```bash
 cowvision measure-once --backend mock
@@ -108,22 +123,51 @@ Monitorar continuamente:
 cowvision monitor --backend mock --frames 200 --interval 0.3
 ```
 
-## Documentacao recomendada
+## Fluxo recomendado de validacao
 
-- [Tutorial Completo](/Users/user/Workspaces/projects/pigvision/docs/tutorial.md)
-- [Como Testar Sem Kinect](/Users/user/Workspaces/projects/pigvision/docs/testing.md)
-- [Entendendo o Codigo](/Users/user/Workspaces/projects/pigvision/docs/code-walkthrough.md)
+Sem Kinect fisico:
 
-## Fluxo recomendado no hardware real
+1. instalar o projeto
+2. criar o banco PostgreSQL
+3. rodar `cowvision init-db`
+4. validar `cowvision capture-frame --backend mock`
+5. calibrar com imagem de referencia ou definir `PIXELS_PER_METER`
+6. testar `measure-once`
+7. testar `monitor`
+8. verificar imagens geradas e registros no banco
 
-1. Fixar o Kinect na mesma posicao de trabalho.
-2. Posicionar uma regua ou referencia conhecida no campo de visao.
-3. Executar a calibracao e validar a imagem gerada em `data/calibration/`.
-4. Rodar `cowvision monitor`.
-5. Conferir as imagens anotadas em `data/images/` e os registros no PostgreSQL.
+Com Kinect fisico:
 
-## Observacoes praticas
+1. fixar o sensor na posicao definitiva
+2. instalar o backend correto
+3. validar captura
+4. refazer a calibracao com referencia real
+5. executar monitoramento de campo
+6. revisar as primeiras medicoes e ajustar limiares se necessario
 
-- O modo `mock` permite desenvolver sem o Kinect conectado.
-- O algoritmo atual privilegia simplicidade: segmenta o maior contorno do frame.
-- Para ambiente real, o proximo passo natural e adicionar mascara da area de passagem e filtros especificos do cenario.
+## Testes
+
+Rodar a suite automatizada:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+O projeto tambem possui CI em GitHub Actions para validar a suite em push e pull request.
+
+## Documentacao complementar
+
+- [Tutorial Completo](/Users/user/Workspaces/projects/cowvision/docs/tutorial.md)
+- [Guia de Arquitetura](/Users/user/Workspaces/projects/cowvision/docs/architecture.md)
+- [Guia de Testes](/Users/user/Workspaces/projects/cowvision/docs/testing.md)
+- [Walkthrough do Codigo](/Users/user/Workspaces/projects/cowvision/docs/code-walkthrough.md)
+
+## Estado atual e proximos passos
+
+O projeto esta funcional para desenvolvimento, testes sem hardware e integracao inicial com Kinect. Como evolucoes naturais, os proximos passos mais provaveis sao:
+
+- melhorar a segmentacao com filtros por profundidade
+- delimitar a area de passagem da vaca
+- adicionar relatorios ou API
+- criar dataset de validacao real
+- medir desempenho em ambiente de campo

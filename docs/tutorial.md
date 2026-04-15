@@ -1,33 +1,30 @@
 # Tutorial Completo
 
-Este tutorial mostra desde a instalacao ate o teste final do projeto.
+Este tutorial apresenta o fluxo completo de instalacao, configuracao, operacao e validacao do CowVision. A proposta e permitir que voce coloque o projeto para funcionar primeiro em modo `mock` e depois avance para o Kinect real com seguranca.
 
-## 1. Visao rapida
+## Objetivo do tutorial
 
-Voce vai:
+Ao final deste guia, voce tera conseguido:
 
-1. criar ambiente Python
-2. configurar PostgreSQL
-3. instalar dependencias
-4. criar o banco
-5. testar com backend `mock`
-6. calibrar o sistema
-7. executar uma medicao
-8. monitorar continuamente
-9. depois trocar para o Kinect real
+- instalar o projeto em ambiente Python isolado
+- configurar o PostgreSQL
+- criar o banco e as tabelas
+- validar o pipeline sem Kinect fisico
+- executar calibracao, medicao unica e monitoramento
+- entender como migrar para o hardware real
 
-## 2. Requisitos
+## 1. Requisitos
 
-Antes de tudo, tenha:
+Antes de iniciar, tenha disponivel:
 
 - Python 3.10 ou superior
-- PostgreSQL rodando
 - `pip`
-- opcionalmente um Kinect compativel
+- PostgreSQL instalado e em execucao
+- opcionalmente, Kinect compativel com `freenect` ou `pykinect2`
 
-## 3. Preparar ambiente Python
+## 2. Preparar o ambiente Python
 
-No diretório do projeto:
+No diretorio do projeto:
 
 ```bash
 python3 -m venv .venv
@@ -36,25 +33,27 @@ python -m pip install --upgrade pip
 pip install -e .
 ```
 
-Se quiser instalar suporte adicional ao Kinect:
+Se voce pretende usar Kinect depois:
 
 ```bash
 pip install -e ".[kinect]"
 ```
 
-Observacao:
-- em Linux, o `freenect` costuma ser o caminho natural
-- em Windows, o `pykinect2` e o caminho esperado
+Observacoes:
 
-## 4. Configurar o `.env`
+- em Linux, `freenect` costuma ser o caminho mais natural
+- em Windows, `pykinect2` tende a ser a opcao mais direta
+- para validacao inicial, o backend `mock` e suficiente
 
-Copie o modelo:
+## 3. Configurar variaveis de ambiente
+
+Crie o arquivo `.env` a partir do modelo:
 
 ```bash
 cp .env.example .env
 ```
 
-Exemplo de configuracao:
+Exemplo de configuracao recomendada para desenvolvimento local:
 
 ```env
 DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/cowvision
@@ -67,51 +66,51 @@ MOTION_THRESHOLD=25
 AUTO_START=false
 ```
 
-### O que cada variavel significa
+Significado dos campos principais:
 
-`DATABASE_URL`
-- endereco de conexao com PostgreSQL
+- `DATABASE_URL`: string de conexao com o PostgreSQL
+- `STORAGE_DIR`: pasta onde imagens e artefatos serao salvos
+- `KINECT_BACKEND`: backend ativo do sensor
+- `PIXELS_PER_METER`: fator fixo de calibracao; se `0`, usa o ultimo salvo no banco
+- `MIN_CONTOUR_AREA`: area minima para aceitar um objeto como valido
+- `MOTION_THRESHOLD`: limiar de sensibilidade da deteccao de movimento
 
-`STORAGE_DIR`
-- pasta raiz para salvar imagens
+## 4. Preparar o PostgreSQL
 
-`KINECT_BACKEND`
-- `mock`, `auto`, `freenect` ou `pykinect2`
+Se o PostgreSQL ja estiver em execucao, entre no `psql`:
 
-`PIXELS_PER_METER`
-- se maior que zero, usa esse valor fixo
-- se igual a zero, usa a ultima calibracao salva no banco
+```bash
+psql postgres
+```
 
-`MIN_CONTOUR_AREA`
-- area minima para considerar um objeto valido
-
-`MOTION_THRESHOLD`
-- sensibilidade da deteccao de movimento
-
-## 5. Preparar PostgreSQL
-
-Exemplo de criacao do banco:
+Crie o banco:
 
 ```sql
 CREATE DATABASE cowvision;
 ```
 
-Exemplo de usuario, se precisar:
+Opcionalmente, crie um usuario dedicado:
 
 ```sql
 CREATE USER cowvision_user WITH PASSWORD 'cowvision_pass';
 GRANT ALL PRIVILEGES ON DATABASE cowvision TO cowvision_user;
 ```
 
-Se usar esse usuario, ajuste o `.env`:
+Se optar por esse usuario, ajuste o `.env`:
 
 ```env
 DATABASE_URL=postgresql+psycopg2://cowvision_user:cowvision_pass@localhost:5432/cowvision
 ```
 
-## 6. Criar tabelas
+Saia do `psql` com:
 
-Com ambiente ativo:
+```sql
+\q
+```
+
+## 5. Criar as tabelas
+
+Com a virtualenv ativa e o `.env` configurado:
 
 ```bash
 cowvision init-db
@@ -123,27 +122,43 @@ Saida esperada:
 Banco inicializado com sucesso.
 ```
 
-## 7. Primeiro teste sem Kinect
+Se quiser validar no banco:
 
-Esse e o melhor caminho para validar que tudo esta instalado.
+```bash
+psql cowvision
+```
 
-### Testar captura
+E no prompt do PostgreSQL:
+
+```sql
+\dt
+```
+
+Voce deve ver as tabelas `calibrations` e `measurements`.
+
+## 6. Validar o sistema sem Kinect fisico
+
+Esta e a etapa mais importante para confirmar que a base do projeto esta correta antes de conectar hardware.
+
+### 6.1 Testar captura simulada
 
 ```bash
 cowvision capture-frame --backend mock
 ```
 
-Saida esperada parecida com:
+Saida esperada aproximada:
 
 ```json
 {"color_shape": [480, 640, 3], "depth_shape": [480, 640]}
 ```
 
-### Fazer uma calibracao simples
+Isso confirma que o backend `mock` esta gerando frame colorido e profundidade artificial.
 
-Como o modo `mock` gera um objeto artificial, voce pode calibrar com uma imagem externa ou com um frame capturado.
+### 6.2 Definir uma estrategia de calibracao
 
-Se tiver uma imagem de referencia, use:
+Voce tem duas opcoes nesta fase.
+
+Opcao A: calibrar com uma imagem de referencia
 
 ```bash
 cowvision calibrate \
@@ -154,23 +169,27 @@ cowvision calibrate \
   --name teste-inicial
 ```
 
-Saida esperada:
+Saida esperada aproximada:
 
 ```json
 {"pixels_per_meter": 200.0, "reference_pixels": 400.0, "preview_path": "data/calibration/...png"}
 ```
 
-Isso significa:
-- 2 metros equivalem a 400 pixels
-- portanto 1 metro equivale a 200 pixels
+Opcao B: definir um valor fixo no `.env` para testes rapidos
 
-### Executar uma medicao unica
+```env
+PIXELS_PER_METER=200
+```
+
+A opcao B e util quando voce quer apenas validar o fluxo completo sem depender de uma imagem de referencia nesse momento.
+
+### 6.3 Executar uma medicao unica
 
 ```bash
 cowvision measure-once --backend mock
 ```
 
-Se o objeto for detectado, a saida sera parecida com:
+Saida esperada aproximada:
 
 ```json
 {
@@ -183,7 +202,7 @@ Se o objeto for detectado, a saida sera parecida com:
 }
 ```
 
-### Testar monitoramento
+### 6.4 Executar monitoramento continuo
 
 ```bash
 cowvision monitor --backend mock --frames 50 --interval 0.2
@@ -195,9 +214,9 @@ Saida esperada:
 {"measurements": 1}
 ```
 
-Ou mais, dependendo do movimento detectado.
+O numero pode variar conforme o movimento detectado entre os frames sinteticos.
 
-## 8. Verificar arquivos gerados
+## 7. Validar artefatos gerados
 
 Depois dos testes, confira:
 
@@ -205,14 +224,22 @@ Depois dos testes, confira:
 - `data/images/`
 - `data/depth/`
 
-Essas imagens ajudam muito a validar:
-- se a calibracao esta correta
-- se o contorno do objeto foi encontrado
-- se a profundidade esta coerente
+O que observar:
 
-## 9. Verificar dados no banco
+- se a imagem de calibracao foi salva corretamente
+- se a caixa de medicao foi desenhada sobre o objeto
+- se a profundidade foi gerada e salva
+- se os nomes dos arquivos estao coerentes
 
-Voce pode usar SQL diretamente:
+## 8. Validar registros no banco
+
+Entre no banco:
+
+```bash
+psql cowvision
+```
+
+Consultas uteis:
 
 ```sql
 SELECT * FROM calibrations ORDER BY created_at DESC;
@@ -221,114 +248,95 @@ SELECT * FROM measurements ORDER BY created_at DESC;
 
 O que esperar:
 
-- em `calibrations`: um registro com pixels por metro
-- em `measurements`: registros com dimensoes, confianca e caminhos das imagens
+- em `calibrations`: fator de conversao pixels/metro
+- em `measurements`: dimensoes, confianca, distancia e caminhos dos arquivos
 
-## 10. Migrar para o Kinect real
+## 9. Migrar para o Kinect real
 
-Quando o mock estiver funcionando:
+Quando o fluxo `mock` estiver validado, troque para o hardware real.
+
+Passos recomendados:
 
 1. conecte o Kinect
-2. instale a biblioteca correta
+2. instale a biblioteca adequada
 3. ajuste `KINECT_BACKEND`
-4. teste captura
-5. refaca a calibracao com o equipamento fixo
+4. valide captura
+5. refaca a calibracao com o sensor na posicao definitiva
+6. execute medicao e monitoramento de campo
 
-### Exemplo
-
-No `.env`:
+Exemplo de configuracao:
 
 ```env
 KINECT_BACKEND=freenect
 ```
 
-Ou:
+ou
 
 ```env
 KINECT_BACKEND=pykinect2
 ```
 
-Depois:
+Teste inicial:
 
 ```bash
 cowvision capture-frame --backend freenect
 ```
 
-Se tudo estiver certo, refaça a calibracao real:
+Depois refaça a calibracao real:
 
 ```bash
 cowvision calibrate \
   --point-a 120,300 \
   --point-b 620,300 \
   --distance-m 2.0 \
-  --name baia-01
+  --name baia-real
 ```
 
-## 11. Fluxo operacional recomendado em campo
+## 10. Boas praticas de operacao em campo
 
-1. Fixe o Kinect sempre na mesma altura e angulo.
-2. Delimite a area por onde a vaca deve passar.
-3. Coloque uma regua ou referencia conhecida na cena.
-4. Execute a calibracao.
-5. Confira a imagem gerada.
-6. Rode o monitoramento.
-7. Revise as primeiras medicoes e ajuste os limiares se necessario.
+Para obter medidas mais consistentes:
 
-## 12. Como interpretar os resultados
+- fixe o Kinect sempre na mesma altura e angulo
+- controle a area por onde a vaca deve passar
+- mantenha a referencia de calibracao no mesmo plano de interesse
+- revise as primeiras medicoes antes de confiar no fluxo automatico
+- ajuste `MIN_CONTOUR_AREA` e `MOTION_THRESHOLD` conforme o ambiente real
 
-### `width_m`
+## 11. Interpretacao dos resultados
 
-Maior dimensao do retangulo ajustado ao objeto.
+- `width_m`: maior dimensao da caixa rotacionada detectada
+- `height_m`: menor dimensao da caixa rotacionada detectada
+- `diameter_m`: media simples entre as duas dimensoes principais
+- `distance_m`: estimativa de distancia baseada na mediana da profundidade do contorno
+- `confidence`: indicador simples baseado na area relativa do objeto no frame
 
-### `height_m`
+## 12. Solucao de problemas comuns
 
-Menor dimensao do retangulo ajustado ao objeto.
+Se `init-db` falhar:
 
-### `diameter_m`
+- confirme se o PostgreSQL esta rodando
+- confirme usuario, senha, host, porta e nome do banco no `.env`
 
-Media simples entre as duas dimensoes principais.
+Se `measure-once` retornar `no-object-detected`:
 
-### `distance_m`
-
-Mediana dos valores de profundidade dentro do contorno segmentado.
-
-### `confidence`
-
-Indicador simples proporcional ao tamanho do objeto na imagem.
-Nao e uma probabilidade estatistica rigorosa.
-
-## 13. Ajustes finos mais comuns
-
-Se o sistema nao detectar a vaca:
+- confira se existe calibracao salva ou se `PIXELS_PER_METER` esta definido
 - reduza `MIN_CONTOUR_AREA`
-- reduza `MOTION_THRESHOLD`
+- revise o frame e a iluminacao
 
-Se estiver detectando ruido:
-- aumente `MIN_CONTOUR_AREA`
-- aumente `MOTION_THRESHOLD`
-- melhore iluminacao e fundo
+Se as medidas em metros estiverem incoerentes:
 
-Se a medida em metros estiver errada:
 - refaça a calibracao
-- garanta que a referencia esta no mesmo plano da vaca
-- mantenha o Kinect fixo
+- garanta que a referencia esteja no plano correto
+- mantenha o sensor fixo entre calibracao e medicao
 
-## 14. Ordem recomendada de validacao
+## 13. Ordem recomendada de validacao
 
-1. `capture-frame --backend mock`
-2. `calibrate`
-3. `measure-once --backend mock`
-4. `monitor --backend mock`
-5. trocar para Kinect real
-6. calibrar novamente
-7. validar no ambiente real
-
-## 15. O que ainda pode evoluir
-
-Depois que a base estiver funcionando, os proximos passos naturais sao:
-
-- adicionar testes automatizados
-- criar mascara da area de passagem
-- melhorar segmentacao usando profundidade
-- gerar relatorios
-- criar API ou interface web
+1. instalar projeto
+2. configurar banco e `.env`
+3. rodar `init-db`
+4. validar `capture-frame --backend mock`
+5. calibrar ou definir `PIXELS_PER_METER`
+6. rodar `measure-once --backend mock`
+7. rodar `monitor --backend mock`
+8. validar imagens e banco
+9. migrar para Kinect real

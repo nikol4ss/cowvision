@@ -1,16 +1,25 @@
 # Arquitetura do CowVision
 
-## Objetivo
+Este documento descreve a organizacao tecnica do projeto, suas camadas principais e o fluxo de dados desde a captura da cena ate a persistencia das medicoes.
 
-O projeto foi organizado para resolver um fluxo bem direto:
+## Objetivo arquitetural
 
-1. Capturar imagem e profundidade com Kinect.
-2. Calibrar a relacao entre pixel e distancia real.
-3. Detectar quando um objeto entra na cena.
-4. Medir o objeto automaticamente.
-5. Salvar imagem, profundidade e dados no PostgreSQL.
+CowVision foi estruturado para resolver um problema especifico com o minimo de complexidade acidental:
 
-## Fluxo geral
+1. capturar imagem e profundidade
+2. calibrar a relacao entre pixel e distancia real
+3. detectar passagem de um objeto na cena
+4. medir dimensoes principais da vaca
+5. salvar evidencias visuais e dados estruturados
+
+A arquitetura privilegia:
+
+- separacao clara de responsabilidades
+- operacao simples via CLI
+- capacidade de teste sem hardware
+- facil evolucao para cenarios reais de campo
+
+## Fluxo principal
 
 ```text
 Kinect / Mock
@@ -22,44 +31,53 @@ Kinect / Mock
     -> PostgreSQL
 ```
 
-## Camadas
+## Camadas do sistema
 
 ### 1. Configuracao
 
-Arquivo: [src/cowvision/config.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/config.py)
+Arquivo: [src/cowvision/config.py](/Users/user/Workspaces/projects/cowvision/src/cowvision/config.py)
 
-Responsabilidade:
-- ler `.env`
-- expor configuracoes globais
+Responsavel por:
 
-Exemplos de configuracao:
+- carregar variaveis do `.env`
+- expor configuracoes compartilhadas pela aplicacao
+- centralizar parametros operacionais
+
+Exemplos:
+
 - `DATABASE_URL`
 - `KINECT_BACKEND`
 - `PIXELS_PER_METER`
 - `MIN_CONTOUR_AREA`
+- `MOTION_THRESHOLD`
 
 ### 2. Captura
 
-Arquivo: [src/cowvision/kinect.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/kinect.py)
+Arquivo: [src/cowvision/kinect.py](/Users/user/Workspaces/projects/cowvision/src/cowvision/kinect.py)
 
-Responsabilidade:
+Responsavel por:
+
 - encapsular a origem dos frames
-- manter a mesma interface para `freenect`, `pykinect2` e `mock`
+- manter uma interface unica para todos os backends
+- permitir desenvolvimento sem sensor fisico
 
-Classes:
+Implementacoes principais:
+
 - `BaseKinectCamera`: contrato base
-- `MockKinectCamera`: simulador
-- `FreenectCamera`: Kinect classico
-- `PyKinect2Camera`: Kinect v2
+- `MockKinectCamera`: simulador para desenvolvimento e testes
+- `FreenectCamera`: integracao com Kinect classico
+- `PyKinect2Camera`: integracao com Kinect v2
 
 ### 3. Calibracao
 
-Arquivo: [src/cowvision/calibration.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/calibration.py)
+Arquivo: [src/cowvision/calibration.py](/Users/user/Workspaces/projects/cowvision/src/cowvision/calibration.py)
 
-Responsabilidade:
-- calcular `pixels_per_meter`
+Responsavel por:
 
-Formula:
+- converter uma referencia conhecida em fator `pixels_per_meter`
+- gerar uma imagem de preview para auditoria visual
+
+Formula aplicada:
 
 ```text
 pixels_per_meter = distancia_em_pixels / distancia_real_em_metros
@@ -74,60 +92,104 @@ pixels_per_meter = 500 / 2.0 = 250 px/m
 
 ### 4. Medicao
 
-Arquivo: [src/cowvision/measurement.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/measurement.py)
+Arquivo: [src/cowvision/measurement.py](/Users/user/Workspaces/projects/cowvision/src/cowvision/measurement.py)
 
-Responsabilidade:
-- detectar movimento
-- segmentar o objeto principal
-- medir largura e altura
-- estimar distancia pela profundidade
+Responsavel por:
+
+- detectar mudanca entre frames
+- segmentar o maior objeto da cena
+- medir dimensoes com base na calibracao
+- estimar distancia usando profundidade
 
 Pipeline atual:
-- converter para escala de cinza
-- suavizar com `GaussianBlur`
-- aplicar `threshold`
-- limpar ruido com operacoes morfologicas
-- extrair contornos
-- escolher o maior contorno
-- medir com `cv2.minAreaRect`
+
+1. conversao para escala de cinza
+2. suavizacao com `GaussianBlur`
+3. limiarizacao binaria
+4. limpeza com operacoes morfologicas
+5. extracao de contornos
+6. selecao do maior contorno
+7. medicao via `cv2.minAreaRect`
 
 ### 5. Orquestracao
 
-Arquivo: [src/cowvision/services.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/services.py)
+Arquivo: [src/cowvision/services.py](/Users/user/Workspaces/projects/cowvision/src/cowvision/services.py)
 
-Responsabilidade:
-- combinar os modulos tecnicos em fluxos completos de negocio
+Responsavel por:
 
-Servicos:
+- combinar os modulos tecnicos em fluxos completos
+- salvar artefatos e registros sem expor detalhes ao CLI
+- consolidar regras de uso de calibracao e persistencia
+
+Servicos principais:
+
 - `CalibrationService`
 - `MonitoringService`
 
 ### 6. Persistencia
 
 Arquivos:
-- [src/cowvision/database.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/database.py)
-- [src/cowvision/models.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/models.py)
-- [src/cowvision/repositories.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/repositories.py)
-- [src/cowvision/storage.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/storage.py)
 
-Responsabilidade:
-- criar tabelas
-- abrir sessoes
-- gravar calibracoes e medicoes
-- salvar imagens em disco
+- [src/cowvision/database.py](/Users/user/Workspaces/projects/cowvision/src/cowvision/database.py)
+- [src/cowvision/models.py](/Users/user/Workspaces/projects/cowvision/src/cowvision/models.py)
+- [src/cowvision/repositories.py](/Users/user/Workspaces/projects/cowvision/src/cowvision/repositories.py)
+- [src/cowvision/storage.py](/Users/user/Workspaces/projects/cowvision/src/cowvision/storage.py)
 
-## Por que esta arquitetura e simples
+Responsavel por:
 
-- cada modulo tem uma responsabilidade pequena
-- o fluxo principal cabe em poucos arquivos
-- existe modo `mock`, entao da para desenvolver sem hardware
-- o banco guarda apenas o essencial
+- criar e gerenciar sessoes de banco
+- mapear tabelas ORM
+- registrar calibracoes e medicoes
+- salvar imagens em disco com nomes unicos
 
-## Limites atuais
+## Entidades principais
 
-- a calibracao usa apenas uma relacao linear simples
-- o algoritmo mede o maior contorno da cena
-- nao ha interface grafica
-- nao ha testes automatizados ainda
+### Calibracao
 
-Isso foi proposital para manter o projeto funcional e facil de entender.
+Representa a relacao entre distancia real e distancia em pixels para uma determinada configuracao de camera.
+
+Dados principais:
+
+- nome
+- pixels por metro
+- distancia real usada
+- distancia em pixels
+- observacoes
+- data de criacao
+
+### Medicao
+
+Representa uma medicao automatica realizada pelo sistema.
+
+Dados principais:
+
+- dimensoes em pixels
+- dimensoes em metros
+- diametro estimado
+- distancia do objeto
+- confianca
+- caminho da imagem anotada
+- caminho da visualizacao de profundidade
+- metadados complementares
+- data de criacao
+
+## Escolhas de design
+
+Algumas decisoes foram intencionais:
+
+- o backend `mock` existe para permitir desenvolvimento sem hardware
+- a calibracao e linear para manter o projeto simples e operacional
+- o maior contorno e usado como objeto principal para evitar heuristicas desnecessarias nesta fase
+- a CLI e o ponto de entrada principal para facilitar operacao e testes
+
+## Limitacoes atuais
+
+O projeto ainda tem algumas simplificacoes importantes:
+
+- calibracao linear simples, sem correcao geometrica avancada
+- segmentacao baseada apenas no maior contorno
+- ausencia de mascara de area de passagem
+- ausencia de interface grafica
+- ausencia de dataset real incorporado ao repositorio
+
+Essas limitacoes sao coerentes com o objetivo atual do projeto: entregar uma base funcional, compreensivel e facil de evoluir.

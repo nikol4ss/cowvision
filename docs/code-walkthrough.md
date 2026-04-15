@@ -1,169 +1,197 @@
-# Codigo Explicado
+# Walkthrough do Codigo
 
-Este documento explica cada parte importante do projeto em linguagem direta.
+Este documento apresenta uma leitura guiada do codigo-fonte para quem quer entender como o CowVision funciona internamente.
+
+## Ordem recomendada de leitura
+
+Se voce estiver conhecendo o projeto agora, a ordem abaixo costuma ser a mais eficiente:
+
+1. [src/cowvision/cli.py](/Users/user/Workspaces/projects/cowvision/src/cowvision/cli.py)
+2. [src/cowvision/services.py](/Users/user/Workspaces/projects/cowvision/src/cowvision/services.py)
+3. [src/cowvision/measurement.py](/Users/user/Workspaces/projects/cowvision/src/cowvision/measurement.py)
+4. [src/cowvision/kinect.py](/Users/user/Workspaces/projects/cowvision/src/cowvision/kinect.py)
+5. [src/cowvision/models.py](/Users/user/Workspaces/projects/cowvision/src/cowvision/models.py)
+6. [src/cowvision/storage.py](/Users/user/Workspaces/projects/cowvision/src/cowvision/storage.py)
 
 ## `src/cowvision/cli.py`
 
-Papel:
-- receber comandos do terminal
-- chamar os servicos corretos
+Este arquivo e a porta de entrada operacional do sistema.
 
-Comandos:
-- `init-db`: cria as tabelas
-- `capture-frame`: testa captura
-- `calibrate`: grava calibracao
-- `measure-once`: mede uma vez
-- `monitor`: roda loop de monitoramento
+Responsabilidades:
 
-### Como a calibracao entra no sistema
+- receber comandos via terminal
+- interpretar argumentos
+- acionar os servicos corretos
+- imprimir respostas simples em formato facil de consumir
 
-No comando `calibrate`, voce informa:
-- imagem ou camera
-- ponto A
-- ponto B
-- distancia real entre os pontos
+Comandos principais:
 
-O CLI manda isso para `CalibrationService`, que:
-- calcula `pixels_per_meter`
-- salva a imagem anotada
-- grava no banco
+- `init-db`: cria as tabelas do banco
+- `capture-frame`: valida a captura do backend
+- `calibrate`: executa e grava uma calibracao
+- `measure-once`: mede um unico frame
+- `monitor`: executa monitoramento continuo
 
-## `src/cowvision/kinect.py`
+Ponto importante:
 
-Esse arquivo serve para padronizar a captura.
-
-Mesmo que a origem seja diferente, o retorno e sempre um `FrameBundle` com:
-- `color`
-- `depth`
-- `timestamp`
-
-### Modo `mock`
-
-Foi criado para voce poder testar:
-- instalacao
-- pipeline
-- banco
-- salvamento de imagens
-
-Sem depender de Kinect fisico.
-
-## `src/cowvision/measurement.py`
-
-Este e o coracao da medicao.
-
-### `detect_motion`
-
-Compara dois frames:
-- converte ambos para cinza
-- calcula diferenca absoluta
-- aplica limiar
-- conta pixels alterados
-
-Se muitos pixels mudaram, consideramos que algo passou.
-
-### `measure`
-
-Executa a segmentacao do objeto:
-
-1. copia o frame colorido
-2. converte para cinza
-3. aplica blur
-4. aplica threshold
-5. limpa ruidos
-6. encontra contornos
-7. pega o maior contorno
-8. mede com `minAreaRect`
-
-### Por que usar `minAreaRect`
-
-Porque ele mede uma caixa rotacionada, nao apenas horizontal.
-Isso ajuda quando a vaca nao esta perfeitamente alinhada com a imagem.
-
-### Como a medida em metros e obtida
-
-Depois da calibracao, temos:
-
-```text
-pixels_per_meter = X
-```
-
-Entao:
-
-```text
-largura_m = largura_px / pixels_per_meter
-altura_m = altura_px / pixels_per_meter
-```
+O CLI nao concentra regra de negocio. Ele apenas coleta parametros, chama servicos e apresenta o resultado. Isso ajuda a manter o projeto modular.
 
 ## `src/cowvision/services.py`
 
-Esse arquivo amarra o fluxo completo.
+Esse modulo concentra os fluxos de alto nivel.
 
 ### `CalibrationService`
 
 Responsavel por:
+
 - chamar o calibrador
-- salvar preview
-- inserir calibracao no banco
+- salvar a imagem de preview
+- registrar a calibracao no banco
+- recuperar o fator de calibracao atual quando necessario
 
 ### `MonitoringService`
 
 Responsavel por:
-- capturar frames
-- detectar movimento
-- medir
-- salvar imagem
-- salvar profundidade
-- inserir no banco
+
+- capturar frames da camera
+- detectar movimento entre frames
+- disparar a medicao quando houver atividade
+- persistir imagens e resultados no banco
+
+Este modulo e onde a aplicacao fica mais proxima do fluxo real de operacao.
+
+## `src/cowvision/measurement.py`
+
+Este e o coracao da logica de visao computacional.
+
+### `detect_motion`
+
+Compara dois frames consecutivos para decidir se algo mudou na cena.
+
+Passos:
+
+1. converte os dois frames para cinza
+2. calcula a diferenca absoluta
+3. aplica limiarizacao
+4. conta quantos pixels mudaram
+
+Se a quantidade de pixels alterados passar do limite, o sistema considera que houve movimento suficiente para tentar medir.
+
+### `measure`
+
+Executa a segmentacao e medicao do objeto principal do frame.
+
+Pipeline:
+
+1. copia a imagem original
+2. converte para tons de cinza
+3. aplica suavizacao com `GaussianBlur`
+4. gera uma mascara binaria com `threshold`
+5. limpa ruidos com operacoes morfologicas
+6. extrai os contornos externos
+7. escolhe o maior contorno
+8. mede com `minAreaRect`
+9. estima a distancia usando profundidade
+10. gera uma imagem anotada com as informacoes da medicao
+
+### Por que usar `minAreaRect`
+
+`minAreaRect` calcula a menor caixa rotacionada que envolve o contorno. Isso e melhor que medir apenas uma caixa horizontal quando a vaca aparece inclinada no frame.
+
+### Conversao de pixels para metros
+
+A conversao depende diretamente da calibracao:
+
+```text
+pixels_per_meter = X
+largura_m = largura_px / X
+altura_m = altura_px / X
+```
+
+## `src/cowvision/kinect.py`
+
+Esse modulo padroniza a origem dos frames.
+
+Independentemente do backend, a saida final e um `FrameBundle` com:
+
+- `color`
+- `depth`
+- `timestamp`
+
+### `MockKinectCamera`
+
+Foi criada para permitir:
+
+- desenvolvimento local
+- validacao da pipeline
+- execucao de testes automatizados
+- uso do projeto sem depender de hardware
+
+Ela gera uma elipse sintetica que se desloca no frame, simulando um objeto em movimento.
 
 ## `src/cowvision/models.py`
 
-Existem duas tabelas:
+Define as duas entidades principais persistidas no banco.
 
-### `calibrations`
+### `CalibrationRecord`
 
-Guarda:
-- nome
+Armazena:
+
+- nome da calibracao
 - pixels por metro
 - distancia real usada
 - distancia em pixels
 - observacoes
+- data de criacao
 
-### `measurements`
+### `MeasurementRecord`
 
-Guarda:
-- largura e altura em pixels
-- largura, altura e diametro em metros
+Armazena:
+
+- dimensoes em pixels
+- dimensoes em metros
+- diametro estimado
 - distancia do objeto
 - confianca
-- caminhos das imagens
+- caminhos dos arquivos gerados
 - metadados em JSON
+- data de criacao
 
 ## `src/cowvision/storage.py`
 
-Tem apenas uma responsabilidade:
-- salvar arquivos em disco com nome unico
+Cuida da persistencia em disco dos artefatos visuais.
 
-Pastas geradas:
-- `data/images`
-- `data/depth`
-- `data/calibration`
+Diretorios gerados:
+
+- `data/images/`: imagens anotadas das medicoes
+- `data/depth/`: mapas de profundidade convertidos para visualizacao
+- `data/calibration/`: previews das calibracoes
+
+A ideia aqui e simples: deixar a persistencia de arquivos desacoplada da logica de medicao.
 
 ## `src/cowvision/database.py`
 
-Centraliza:
-- engine do SQLAlchemy
-- sessao
-- transacao com commit/rollback
+Centraliza a infraestrutura de banco.
 
-O `session_scope()` existe para evitar repeticao e deixar o codigo mais seguro.
+Responsabilidades:
 
-## Como estudar o projeto
+- criar o engine do SQLAlchemy
+- fornecer sessoes
+- padronizar commit e rollback com `session_scope()`
 
-Uma boa ordem para leitura e:
+Esse desenho evita repeticao e reduz o risco de deixar transacoes abertas.
 
-1. [src/cowvision/cli.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/cli.py)
-2. [src/cowvision/services.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/services.py)
-3. [src/cowvision/measurement.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/measurement.py)
-4. [src/cowvision/kinect.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/kinect.py)
-5. [src/cowvision/models.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/models.py)
-6. [src/cowvision/storage.py](/Users/user/Workspaces/projects/pigvision/src/cowvision/storage.py)
+## `src/cowvision/repositories.py`
+
+Implementa uma camada leve de acesso aos dados.
+
+Papel:
+
+- encapsular insercoes e consultas mais comuns
+- reduzir acoplamento direto entre servicos e modelos ORM
+
+Mesmo sendo simples, essa camada ajuda a manter os servicos mais legiveis.
+
+## Conclusao
+
+O CowVision foi estruturado para ser facil de entender e facil de evoluir. A maior parte da logica importante esta concentrada em poucos modulos, com fronteiras bem definidas entre CLI, servicos, visao computacional, persistencia e acesso ao hardware.
