@@ -1,7 +1,7 @@
 # CowVision
 
 CowVision e uma base em Python para captacao, calibracao e medicao automatica de vacas usando Kinect. O projeto transforma informacoes de imagem e profundidade em medidas reais, registra as evidencias visuais da medicao e persiste os dados em PostgreSQL.
-
+eq
 ## Visao geral
 
 O sistema foi desenhado para um fluxo simples e objetivo:
